@@ -345,9 +345,8 @@
             }
         };
 
-        // UPDATED AUTO-FORMATTER TO HANDLE THE DD-MM-YYYY SEQUENCE NATURALLY
         function formatDateInput(input) {
-            let value = input.value.replace(/\D/g, ''); // Strip non-digits
+            let value = input.value.replace(/\D/g, ''); 
             
             if (value.length > 2 && value.length <= 4) {
                 value = value.slice(0, 2) + '-' + value.slice(2);
@@ -426,6 +425,13 @@
             document.getElementById('patient-modal').classList.remove('hidden');
         }
 
+        function editPatientById(id) {
+            const transaction = db.transaction(["patients"], "readonly");
+            transaction.objectStore("patients").get(id).onsuccess = (e) => {
+                if (e.target.result) openPatientModal(e.target.result);
+            };
+        }
+
         function closePatientModal() { document.getElementById('patient-modal').classList.add('hidden'); }
 
         function savePatient(e) {
@@ -433,7 +439,6 @@
             const id = document.getElementById('p-id').value;
             const birthdayValue = document.getElementById('p-birthday').value;
 
-            // Enforce full character matching length check
             if(birthdayValue.length < 10) {
                 alert("Please match the full DD-MM-YYYY pattern for the birthday.");
                 return;
@@ -580,7 +585,7 @@
                         <div class="flex justify-between font-bold text-gray-600">
                             <span>📅 ${v.date} - ${v.IllnessIsText || 'Visit'}</span>
                             <div class="space-x-2">
-                                <button onclick='editVisit(${JSON.stringify(v)})' class="text-blue-600 hover:underline">Edit</button>
+                                <button onclick="editVisitById(${v.visit_id})" class="text-blue-600 hover:underline">Edit</button>
                                 <button onclick="deleteVisit(${v.visit_id})" class="text-red-500 hover:underline">Delete</button>
                             </div>
                         </div>
@@ -609,8 +614,8 @@
                             <span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-mono">ID: ${p.patient_id}</span>
                         </div>
                         <div class="flex gap-3">
-                            <button onclick='editPatient(${JSON.stringify(p)})' class="text-xs text-blue-600 hover:underline font-semibold">Edit Profile</button>
-                            <button onclick="deletePatient(${p.patient_id}, '${p.name}')" class="text-xs text-red-500 hover:underline font-semibold">Delete Profile</button>
+                            <button onclick="editPatientById(${p.patient_id})" class="text-xs text-blue-600 hover:underline font-semibold">Edit Profile</button>
+                            <button onclick="deletePatient(${p.patient_id}, '${p.name.replace(/'/g, "\\'")}')" class="text-xs text-red-500 hover:underline font-semibold">Delete Profile</button>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-y-1 gap-x-2 text-xs text-gray-600 mb-3">
@@ -637,7 +642,6 @@
             container.appendChild(card);
         }
 
-        function editPatient(patient) { openPatientModal(patient); }
         function searchPatients() { loadPatients(document.getElementById('search-input').value); }
         function clearSearch() { document.getElementById('search-input').value = ""; loadPatients(""); }
 
@@ -663,7 +667,12 @@
             document.getElementById('visit-modal').classList.remove('hidden');
         }
 
-        function editVisit(visit) { openVisitModal(visit.patient_id, visit); }
+        function editVisitById(visitId) {
+            const transaction = db.transaction(["visits"], "readonly");
+            transaction.objectStore("visits").get(visitId).onsuccess = (e) => {
+                if (e.target.result) openVisitModal(e.target.result.patient_id, e.target.result);
+            };
+        }
 
         function deleteVisit(visitId) {
             if (confirm("Are you sure you want to delete this visit record?")) {
@@ -727,14 +736,19 @@
             };
         }
 
-        function editPayment(payment) {
-            document.getElementById('payment-form-title').innerText = "Edit Payment Record";
-            document.getElementById('pay-id').value = payment.id;
-            document.getElementById('pay-date').value = payment.date;
-            document.getElementById('pay-desc').value = payment.Description;
-            
-            document.getElementById('cancel-pay-edit-btn').classList.remove('hidden');
-            document.getElementById('save-pay-btn').innerText = "Update Payment";
+        function editPaymentById(id) {
+            const transaction = db.transaction(["payments"], "readonly");
+            transaction.objectStore("payments").get(id).onsuccess = (e) => {
+                const payment = e.target.result;
+                if (!payment) return;
+                document.getElementById('payment-form-title').innerText = "Edit Payment Record";
+                document.getElementById('pay-id').value = payment.id;
+                document.getElementById('pay-date').value = payment.date;
+                document.getElementById('pay-desc').value = payment.Description;
+                
+                document.getElementById('cancel-pay-edit-btn').classList.remove('hidden');
+                document.getElementById('save-pay-btn').innerText = "Update Payment";
+            };
         }
 
         function deletePayment(paymentId) {
@@ -779,7 +793,7 @@
                         <td class="p-3 text-gray-700">${cursor.value.date}</td>
                         <td class="p-3 text-gray-900 font-medium">${cursor.value.Description}</td>
                         <td class="p-3 text-center space-x-2">
-                            <button onclick='editPayment(${JSON.stringify(cursor.value)})' class="text-blue-600 hover:text-blue-800 font-medium text-xs">Edit</button>
+                            <button onclick="editPaymentById(${cursor.value.id})" class="text-blue-600 hover:text-blue-800 font-medium text-xs">Edit</button>
                             <button onclick="deletePayment(${cursor.value.id})" class="text-red-500 hover:text-red-700 font-medium text-xs">Delete</button>
                         </td>
                     `;
@@ -807,9 +821,8 @@
             `;
         }
 
-        function openVisitFromSearch(visitJsonString) {
-            const visitObj = JSON.parse(decodeURIComponent(visitJsonString));
-            openVisitModal(visitObj.patient_id, visitObj);
+        function openVisitFromSearch(visitId) {
+            editVisitById(parseInt(visitId));
         }
 
         function triggerNewVisitFromSearch(patientId) {
@@ -884,8 +897,6 @@
                         const pt = patientsMap[v.patient_id];
                         const row = document.createElement('tr');
                         row.className = "hover:bg-gray-50 border-b border-gray-100 transition";
-                        
-                        const encodedVisit = encodeURIComponent(JSON.stringify(v));
 
                         row.innerHTML = `
                             <td class="p-3 font-semibold text-gray-900">${pt ? pt.name : 'Unknown'}</td>
@@ -896,7 +907,7 @@
                             <td class="p-3 text-gray-600 max-w-xs truncate" title="${v.diagnosis || ''}">${v.diagnosis || '-'}</td>
                             <td class="p-3 text-gray-600 max-w-xs truncate" title="${v.medicament || ''}">${v.medicament || '-'}</td>
                             <td class="p-3 text-center space-x-3 whitespace-nowrap">
-                                <button onclick="openVisitFromSearch('${encodedVisit}')" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold text-xs">
+                                <button onclick="openVisitFromSearch(${v.visit_id})" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold text-xs">
                                     ✏️ Edit
                                 </button>
                                 <button onclick="triggerNewVisitFromSearch(${v.patient_id})" class="text-green-600 hover:text-green-800 hover:underline font-semibold text-xs">
