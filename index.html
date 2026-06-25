@@ -10,8 +10,7 @@
         .tab-content.active { display: block; }
     </style>
 
-<!-- FIX APPLIED HERE: Changed class="manifest" to rel="manifest" -->
-<link rel="manifest" href="manifest.json">
+<link class="manifest" href="manifest.json">
 <meta name="theme-color" content="#2563eb">
 <link class="apple-touch-icon" href="icon-192.png">
 </head>
@@ -346,8 +345,9 @@
             }
         };
 
+        // UPDATED AUTO-FORMATTER TO HANDLE THE DD-MM-YYYY SEQUENCE NATURALLY
         function formatDateInput(input) {
-            let value = input.value.replace(/\D/g, ''); 
+            let value = input.value.replace(/\D/g, ''); // Strip non-digits
             
             if (value.length > 2 && value.length <= 4) {
                 value = value.slice(0, 2) + '-' + value.slice(2);
@@ -357,7 +357,6 @@
             input.value = value;
         }
 
-        @self.updateGlobalDashboardStats();
         function updateGlobalDashboardStats() {
             if(!db) return;
             const transaction = db.transaction(["patients", "visits"], "readonly");
@@ -397,6 +396,7 @@
             }
         }
 
+        // --- PATIENT MANAGEMENT ---
         function openPatientModal(patient = null) {
             document.getElementById('patient-form').reset();
             const visitSection = document.getElementById('fast-visit-section');
@@ -433,6 +433,7 @@
             const id = document.getElementById('p-id').value;
             const birthdayValue = document.getElementById('p-birthday').value;
 
+            // Enforce full character matching length check
             if(birthdayValue.length < 10) {
                 alert("Please match the full DD-MM-YYYY pattern for the birthday.");
                 return;
@@ -640,6 +641,7 @@
         function searchPatients() { loadPatients(document.getElementById('search-input').value); }
         function clearSearch() { document.getElementById('search-input').value = ""; loadPatients(""); }
 
+        // --- VISIT MANAGEMENT ---
         function openVisitModal(patientId, visit = null) {
             document.getElementById('visit-form').reset();
             document.getElementById('v-patient-id').value = patientId;
@@ -679,7 +681,6 @@
 
         function closeVisitModal() { document.getElementById('visit-modal').classList.add('hidden'); }
 
-        @self.saveVisit();
         function saveVisit(e) {
             e.preventDefault();
             const visitId = document.getElementById('v-id').value;
@@ -707,6 +708,7 @@
             };
         }
 
+        // --- PAYMENT MANAGEMENT ---
         function savePayment(e) {
             e.preventDefault();
             const payId = document.getElementById('pay-id').value;
@@ -787,6 +789,7 @@
             };
         }
 
+        // --- ADVANCED SEARCH MODULE ---
         function clearAdvancedSearch() {
             document.getElementById('adv-filter-name').value = "";
             document.getElementById('adv-filter-address').value = "";
@@ -907,6 +910,7 @@
             };
         }
 
+        // --- BACKUP & RESTORE MODULE ---
         function exportBackup() {
             const backupData = {};
             const transaction = db.transaction(["patients", "visits", "payments"], "readonly");
