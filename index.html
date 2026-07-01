@@ -10,9 +10,11 @@
         .tab-content.active { display: block; }
     </style>
 
-<link class="manifest" href="manifest.json">
-<meta name="theme-color" content="#2563eb">
-<link class="apple-touch-icon" href="icon-192.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
 
@@ -144,23 +146,17 @@
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-700 text-sm">Search Results</h3>
-                    <div class="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-medium border border-blue-100">
-                        🔍 Visits Found: <strong id="adv-search-count" class="font-bold">0</strong>
-                    </div>
-                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-100 text-xs font-semibold uppercase text-gray-600 border-b border-gray-200">
                                 <th class="p-3">Patient Name</th>
-                                <th class="p-3">Diagnosis</th>
-                                <th class="p-3">Medicament</th>
                                 <th class="p-3">Sex</th>
                                 <th class="p-3">Address</th>
                                 <th class="p-3">Visit Date</th>
                                 <th class="p-3">Summary</th>
+                                <th class="p-3">Diagnosis</th>
+                                <th class="p-3">Medicament</th>
                                 <th class="p-3 text-center">Actions</th>
                             </tr>
                         </thead>
@@ -401,7 +397,6 @@
             }
         }
 
-        // --- PATIENT MANAGEMENT ---
         function openPatientModal(patient = null) {
             document.getElementById('patient-form').reset();
             const visitSection = document.getElementById('fast-visit-section');
@@ -645,7 +640,6 @@
         function searchPatients() { loadPatients(document.getElementById('search-input').value); }
         function clearSearch() { document.getElementById('search-input').value = ""; loadPatients(""); }
 
-        // --- VISIT MANAGEMENT ---
         function openVisitModal(patientId, visit = null) {
             document.getElementById('visit-form').reset();
             document.getElementById('v-patient-id').value = patientId;
@@ -712,7 +706,6 @@
             };
         }
 
-        // --- PAYMENT MANAGEMENT ---
         function savePayment(e) {
             e.preventDefault();
             const payId = document.getElementById('pay-id').value;
@@ -754,7 +747,6 @@
             }
         }
 
-        // --- RESTORED / RESET CONFIGS FOR PAYMENT ---
         function resetPaymentForm() {
             document.getElementById('payment-form').reset();
             document.getElementById('pay-id').value = "";
@@ -794,7 +786,6 @@
             };
         }
 
-        // --- ADVANCED SEARCH MODULE ---
         function clearAdvancedSearch() {
             document.getElementById('adv-filter-name').value = "";
             document.getElementById('adv-filter-address').value = "";
@@ -803,7 +794,6 @@
             document.getElementById('adv-filter-sex').value = "";
             document.getElementById('adv-filter-diag').value = "";
             document.getElementById('adv-filter-med').value = "";
-            document.getElementById('adv-search-count').innerText = "0";
             
             const tbody = document.getElementById('adv-search-table-body');
             tbody.innerHTML = `
@@ -813,6 +803,7 @@
             `;
         }
 
+        // URI Decoder fix applied for robust stringification
         function openVisitFromSearch(visitJsonString) {
             const visitObj = JSON.parse(decodeURIComponent(visitJsonString));
             openVisitModal(visitObj.patient_id, visitObj);
@@ -879,8 +870,6 @@
                         return true;
                     });
 
-                    document.getElementById('adv-search-count').innerText = filteredVisits.length;
-
                     if(filteredVisits.length === 0) {
                         tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400 italic">No historical matching records found.</td></tr>`;
                         return;
@@ -897,12 +886,12 @@
 
                         row.innerHTML = `
                             <td class="p-3 font-semibold text-gray-900">${pt ? pt.name : 'Unknown'}</td>
-                            <td class="p-3 text-gray-600 max-w-xs truncate" title="${v.diagnosis || ''}">${v.diagnosis || '-'}</td>
-                            <td class="p-3 text-gray-600 max-w-xs truncate" title="${v.medicament || ''}">${v.medicament || '-'}</td>
                             <td class="p-3 text-gray-600">${pt ? pt.sex : 'N/A'}</td>
                             <td class="p-3 text-gray-600 max-w-xs truncate" title="${pt?.address || ''}">${pt?.address || '-'}</td>
                             <td class="p-3 text-gray-700 font-mono text-xs">${v.date}</td>
                             <td class="p-3 text-gray-600 font-medium">${v.IllnessIsText || '-'}</td>
+                            <td class="p-3 text-gray-600 max-w-xs truncate" title="${v.diagnosis || ''}">${v.diagnosis || '-'}</td>
+                            <td class="p-3 text-gray-600 max-w-xs truncate" title="${v.medicament || ''}">${v.medicament || '-'}</td>
                             <td class="p-3 text-center space-x-3 whitespace-nowrap">
                                 <button onclick="openVisitFromSearch('${encodedVisit}')" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold text-xs">
                                     ✏️ Edit
@@ -918,7 +907,6 @@
             };
         }
 
-        // --- BACKUP & RESTORE MODULE ---
         function exportBackup() {
             const backupData = {};
             const transaction = db.transaction(["patients", "visits", "payments"], "readonly");
@@ -972,10 +960,14 @@
         }
     </script>
 
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
-}
-</script>
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('Service Worker Registered!', reg.scope))
+          .catch(err => console.error('Service Worker registration failed: ', err));
+      });
+    }
+    </script>
 </body>
 </html>
